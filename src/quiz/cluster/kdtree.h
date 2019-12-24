@@ -27,9 +27,26 @@ struct KdTree
 
 	void insert(std::vector<float> point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
+		insertHelper(&root, point, id, 0);
+	}
 
+	void insertHelper(Node **node, std::vector<float> point, int id, int dimension)
+	{
+		// recursive function that inserts the point into the kdtree
+		if (NULL == *node) {
+			*node = new Node(point, id);
+		}
+		else {
+			// calculate current dimension
+			int cd = dimension % 2;
+			double split = (*node)->point[cd];
+
+			if (point[cd] < split) {
+				insertHelper(&((*node)->left), point, id, dimension + 1);
+			} else {
+				insertHelper(&((*node)->right), point, id, dimension + 1);
+			}
+		}
 	}
 
 	// return a list of point ids in the tree that are within distance of target
