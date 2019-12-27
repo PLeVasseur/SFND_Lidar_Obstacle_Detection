@@ -54,14 +54,14 @@ struct KdTree
 	{
 		std::vector<int> ids;
 
-		searchHelper(target, distanceTol, 0, ids, &root);
+		searchHelper(target, distanceTol, 0, ids, root);
 
 		return ids;
 	}
 
-	void searchHelper(std::vector<float> target, float distanceTol, uint dim, std::vector<int> &nearbyIDs, Node **node)
+	void searchHelper(std::vector<float> target, float distanceTol, uint dim, std::vector<int> &nearbyIDs, Node *node)
 	{
-		if (NULL == *node)
+		if (NULL == node)
 		{ 
 			return;
 		}
@@ -71,7 +71,7 @@ struct KdTree
 			double t_y = target[1] + distanceTol;
 			double b_y = target[1] - distanceTol;
 
-			std::vector<float> pt = (*node)->point;
+			std::vector<float> pt = node->point;
 
 			// check if the point is nearby, i.e. within box
 			if (pt[0] <= r_x && pt[0] >= l_x
@@ -79,24 +79,17 @@ struct KdTree
 				// in the box, now check distance to see if it's nearby and should be added to list
 				double euclid_dist = sqrt( pow((target[0] - pt[0]), 2) + pow((target[1] - pt[1]), 2));
 				if (euclid_dist <= distanceTol) { 
-					nearbyIDs.push_back( (*node)->id );
+					nearbyIDs.push_back( node->id );
 				}
+			}
 
-				// explore both left and right nodes				
-				searchHelper(target, distanceTol, dim + 1, nearbyIDs, &((*node)->left));
-				searchHelper(target, distanceTol, dim + 1, nearbyIDs, &((*node)->right));
-			} else
-			{
-				uint cd = dim % 2; // 0 if x, 1 if y
-				double distanceToMaxDistanceTolerance = abs((*node)->point[cd] - (target[cd] + distanceTol));
-				double distanceToMinDistanceTolerance = abs((*node)->point[cd] - (target[cd] - distanceTol));
-				if (distanceToMaxDistanceTolerance < distanceToMinDistanceTolerance) {
-					// don't need to explore right node, only explore left node
-					searchHelper(target, distanceTol, dim + 1, nearbyIDs, &((*node)->left));
-				} else {
-					// don't need to explore left node, only explore right node
-					searchHelper(target, distanceTol, dim + 1, nearbyIDs, &((*node)->right));
-				}
+			// check the regions of the kdtree we need to explore further
+			uint cd = dim % 2; // 0 if x, 1 if y
+			if (target[cd] - distanceTol < node->point[cd]) {
+				searchHelper(target, distanceTol, dim + 1, nearbyIDs, node->left);
+			}
+			if (target[cd] + distanceTol > node->point[cd]) {
+				searchHelper(target, distanceTol, dim + 1, nearbyIDs, node->right);
 			}
 		}
 	}
