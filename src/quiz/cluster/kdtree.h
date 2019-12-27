@@ -53,9 +53,46 @@ struct KdTree
 	std::vector<int> search(std::vector<float> target, float distanceTol)
 	{
 		std::vector<int> ids;
+
+		searchHelper(target, distanceTol, 0, ids, root);
+
 		return ids;
 	}
-	
+
+	void searchHelper(std::vector<float> target, float distanceTol, uint dim, std::vector<int> &nearbyIDs, Node *node)
+	{
+		if (NULL == node)
+		{ 
+			return;
+		}
+		else {
+			double r_x = target[0] + distanceTol;
+			double l_x = target[0] - distanceTol;
+			double t_y = target[1] + distanceTol;
+			double b_y = target[1] - distanceTol;
+
+			std::vector<float> pt = node->point;
+
+			// check if the point is nearby, i.e. within box
+			if (pt[0] <= r_x && pt[0] >= l_x
+			    && pt[1] <= t_y && pt[1] >= b_y) {
+				// in the box, now check distance to see if it's nearby and should be added to list
+				double euclid_dist = sqrt( pow((target[0] - pt[0]), 2) + pow((target[1] - pt[1]), 2));
+				if (euclid_dist <= distanceTol) { 
+					nearbyIDs.push_back( node->id );
+				}
+			}
+
+			// check the regions of the kdtree we need to explore further
+			uint cd = dim % 2; // 0 if x, 1 if y
+			if (target[cd] - distanceTol < node->point[cd]) {
+				searchHelper(target, distanceTol, dim + 1, nearbyIDs, node->left);
+			}
+			if (target[cd] + distanceTol > node->point[cd]) {
+				searchHelper(target, distanceTol, dim + 1, nearbyIDs, node->right);
+			}
+		}
+	}
 
 };
 
