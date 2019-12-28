@@ -185,21 +185,18 @@ BoxQ ProcessPointClouds<PointT>::BoundingBoxPCA(typename pcl::PointCloud<PointT>
     // Transform the original cloud to the origin where the principal components correspond to the axes.
     Eigen::Matrix4f projectionTransform(Eigen::Matrix4f::Identity());
 
-    // TODO: Only deal with rotation about z axis, not x or y axes, cars most likely only yawing not rolling or pitching
-    // useful page: http://planning.cs.uiuc.edu/node103.html
-    double yaw = atan2(eigenVectorsPCA(1,0), eigenVectorsPCA(0,0)); // new
-    Eigen::Matrix3f yawOnly; // new
-    yawOnly(0,0) = cos(yaw); // new
-    yawOnly(0,1) = -sin(yaw); // new
-    yawOnly(1,0) = sin(yaw); // new
-    yawOnly(1,1) = cos(yaw); // new
+    // Only deal with rotation about z axis, not x or y axes, cars most likely only yawing not rolling or pitching
+    // useful page for how to extract yaw from rotation matrix: http://planning.cs.uiuc.edu/node103.html
+    double yaw = atan2(eigenVectorsPCA(1,0), eigenVectorsPCA(0,0));
+    Eigen::Matrix3f yawOnly;
+    yawOnly(0,0) = cos(yaw);
+    yawOnly(0,1) = -sin(yaw);
+    yawOnly(1,0) = sin(yaw);
+    yawOnly(1,1) = cos(yaw);
     yawOnly(2,2) = 1.f;
-    // take transpose to undo the rotation
-    projectionTransform.block<3,3>(0,0) = yawOnly.transpose();  // new
-
-    // use if we are assuming cars can pitch and roll as well
-    // projectionTransform.block<3,3>(0,0) = eigenVectorsPCA.transpose(); // old
-    projectionTransform.block<3,1>(0,3) = -1.f * (projectionTransform.block<3,3>(0,0) * pcaCentroid.head<3>()); // new
+    
+    projectionTransform.block<3,3>(0,0) = yawOnly.transpose(); // take transpose to undo the rotation
+    projectionTransform.block<3,1>(0,3) = -1.f * (projectionTransform.block<3,3>(0,0) * pcaCentroid.head<3>());
 
     typename pcl::PointCloud<PointT>::Ptr cloudPointsProjected (new pcl::PointCloud<PointT>);
     pcl::transformPointCloud(*cluster, *cloudPointsProjected, projectionTransform);
@@ -210,10 +207,8 @@ BoxQ ProcessPointClouds<PointT>::BoundingBoxPCA(typename pcl::PointCloud<PointT>
     const Eigen::Vector3f meanDiagonal = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
 
     // Final transform
-    // const Eigen::Quaternionf bboxQuaternion(eigenVectorsPCA); //Quaternions are a way to do rotations https://www.youtube.com/watch?v=mHVwd8gYLnI // old
-    // const Eigen::Vector3f bboxTransform = eigenVectorsPCA * meanDiagonal + pcaCentroid.head<3>(); // old
-    const Eigen::Quaternionf bboxQuaternion(yawOnly); //Quaternions are a way to do rotations https://www.youtube.com/watch?v=mHVwd8gYLnI // new
-    const Eigen::Vector3f bboxTransform = yawOnly * meanDiagonal + pcaCentroid.head<3>(); // new
+    const Eigen::Quaternionf bboxQuaternion(yawOnly); //Quaternions are a way to do rotations https://www.youtube.com/watch?v=mHVwd8gYLnI
+    const Eigen::Vector3f bboxTransform = yawOnly * meanDiagonal + pcaCentroid.head<3>();
 
     BoxQ boxq;
     boxq.bboxTransform = bboxTransform;
