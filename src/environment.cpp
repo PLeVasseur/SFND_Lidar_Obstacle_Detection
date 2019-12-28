@@ -69,8 +69,10 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
         ++clusterId;
 
         if(renderBoxes) {
-            Box box = pointProcessor.BoundingBox(cluster);
-            renderBox(viewer,box,clusterId);
+            // Box box = pointProcessor.BoundingBox(cluster);
+            // renderBox(viewer,box,clusterId);
+            BoxQ boxq = pointProcessor.BoundingBoxPCA(cluster);
+            renderBox(viewer,boxq,clusterId);
         }
     }
 }

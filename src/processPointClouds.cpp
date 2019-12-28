@@ -165,6 +165,64 @@ Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Pt
     return box;
 }
 
+template<typename PointT>
+BoxQ ProcessPointClouds<PointT>::BoundingBoxPCA(typename pcl::PointCloud<PointT>::Ptr cluster)
+{
+    // Compute principal directions by
+    // finding the centroid
+    Eigen::Vector4f pcaCentroid;
+    pcl::compute3DCentroid(*cluster, pcaCentroid); // had to derefence the boost shared pointer to
+                                                   // match the function signature of compute3DCentroid
+    // getting the normalized covariance matrix of the point cloud
+    Eigen::Matrix3f covariance;
+    computeCovarianceMatrixNormalized(*cluster, pcaCentroid, covariance);
+    // computing the eigenvectors of the normalized covariance matrix
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
+    eigenVectorsPCA.col(2) = eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));  /// This line is necessary for proper orientation in some cases. The numbers come out the same without it, but
+                                                                                    ///    the signs are different and the box doesn't get correctly oriented in some cases.
+
+    // Transform the original cloud to the origin where the principal components correspond to the axes.
+    Eigen::Matrix4f projectionTransform(Eigen::Matrix4f::Identity());
+
+    // TODO: Only deal with rotation about z axis, not x or y axes, cars most likely only yawing not rolling or pitching
+    // double yaw = atan2(eigenVectorsPCA(2,1), eigenVectorsPCA(1,1)); // new
+    // Eigen::Matrix3f yawOnly; // new
+    // yawOnly(0,0) = cos(yaw); // new
+    // yawOnly(0,1) = -sin(yaw); // new
+    // yawOnly(1,0) = sin(yaw); // new
+    // yawOnly(1,1) = cos(yaw); // new
+    // take transpose to undo the rotation
+    // projectionTransform.block<3,3>(0,0) = yawOnly.transpose();  // new
+
+    // use if we are assuming cars can pitch and roll as well
+    projectionTransform.block<3,3>(0,0) = eigenVectorsPCA.transpose();
+    projectionTransform.block<3,1>(0,3) = -1.f * (projectionTransform.block<3,3>(0,0) * pcaCentroid.head<3>()); // new
+
+    typename pcl::PointCloud<PointT>::Ptr cloudPointsProjected (new pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*cluster, *cloudPointsProjected, projectionTransform);
+
+    // Get the minimum and maximum points of the transformed cloud.
+    pcl::PointXYZ minPoint, maxPoint;
+    pcl::getMinMax3D(*cloudPointsProjected, minPoint, maxPoint);
+    const Eigen::Vector3f meanDiagonal = 0.5f*(maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    // Final transform
+    const Eigen::Quaternionf bboxQuaternion(eigenVectorsPCA); //Quaternions are a way to do rotations https://www.youtube.com/watch?v=mHVwd8gYLnI
+    const Eigen::Vector3f bboxTransform = eigenVectorsPCA * meanDiagonal + pcaCentroid.head<3>();
+    // const Eigen::Quaternionf bboxQuaternion(yawOnly); //Quaternions are a way to do rotations https://www.youtube.com/watch?v=mHVwd8gYLnI
+    // const Eigen::Vector3f bboxTransform = yawOnly * meanDiagonal + pcaCentroid.head<3>();
+
+    BoxQ boxq;
+    boxq.bboxTransform = bboxTransform;
+    boxq.bboxQuaternion = bboxQuaternion;
+    boxq.cube_length = maxPoint.x - minPoint.x;
+    boxq.cube_width = maxPoint.y - minPoint.y;
+    boxq.cube_height = maxPoint.z - minPoint.z;
+
+    return boxq;
+}
+
 
 template<typename PointT>
 void ProcessPointClouds<PointT>::savePcd(typename pcl::PointCloud<PointT>::Ptr cloud, std::string file)
