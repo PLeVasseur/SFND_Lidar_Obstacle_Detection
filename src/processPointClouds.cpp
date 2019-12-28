@@ -193,6 +193,7 @@ BoxQ ProcessPointClouds<PointT>::BoundingBoxPCA(typename pcl::PointCloud<PointT>
     yawOnly(0,1) = -sin(yaw); // new
     yawOnly(1,0) = sin(yaw); // new
     yawOnly(1,1) = cos(yaw); // new
+    yawOnly(2,2) = 1.f;
     // take transpose to undo the rotation
     projectionTransform.block<3,3>(0,0) = yawOnly.transpose();  // new
 
