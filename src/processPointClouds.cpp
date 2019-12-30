@@ -103,7 +103,6 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto startTime = std::chrono::steady_clock::now();
 	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
-    // TODO:: Fill in this function to find inliers for the cloud.
 
     // Create the segmentation object
     pcl::SACSegmentation<PointT> seg;
@@ -130,11 +129,100 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     return segResult;
 }
 
-// template<typename PointT>
-// std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane2(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
-// {
-//     // TODO: stub, unclear if I need to bring ransac2d's RansacPlane in here or not
-// }
+template<typename PointT>
+std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane2(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
+{
+    // Time segmentation process
+    auto startTime = std::chrono::steady_clock::now();
+
+    std::unordered_set<int> inliersResult;
+	std::unordered_set<int> currentInliers;
+	srand(time(NULL));
+
+	// For max iterations
+	for (int loop = 0; loop < maxIterations; loop++) {
+
+		// Randomly sample subset and fit plane
+		currentInliers.clear();
+		while (currentInliers.size() < 3) {
+			currentInliers.insert(rand() % cloud->size());
+		}
+
+		double x1, x2, x3, y1, y2, y3, z1, z2, z3;
+
+		auto itr = currentInliers.begin();
+		x1 = cloud->points[*itr].x;
+		y1 = cloud->points[*itr].y;
+		z1 = cloud->points[*itr].z;
+		itr++;
+		x2 = cloud->points[*itr].x;
+		y2 = cloud->points[*itr].y;
+		z2 = cloud->points[*itr].z;
+		itr++;
+		x3 = cloud->points[*itr].x;
+		y3 = cloud->points[*itr].y;
+		z3 = cloud->points[*itr].z;
+
+		// general equation for a plane: Ax + By + Cz + D = 0
+		// given three points (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) the form is:
+		// ix + jy + kz - (ix1 + jy1 + kz1) = 0
+		// where
+		// A = i
+		// B = j
+		// C = k
+		// D = -(ix1 + jy1 + kz1)
+		// and
+		// i = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1)
+		// j = (z2 - z1) * (x3 - x1) - (x2 - x1) * (z3 - z1)
+		// k = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1)
+
+		double i = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1);
+		double j = (z2 - z1) * (x3 - x1) - (x2 - x1) * (z3 - z1);
+		double k = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+
+		double A = i;
+		double B = j;
+		double C = k;
+		double D = -(i * x1 + j * y1 + k * z1);
+
+		// // Measure distance between every point and fitted plane
+		for (int idx = 0; idx < cloud->points.size(); ++idx)
+		{
+			if (currentInliers.count(idx) > 0) 
+			{ continue; }
+
+			double pt_x = cloud->points[idx].x;
+			double pt_y = cloud->points[idx].y;
+			double pt_z = cloud->points[idx].z;
+
+			// If distance is smaller than threshold count it as inlier
+			// distance d = | Ax + By + C | / sqrt(A^2 + B^2) for a point (x, y)
+			double d = abs(A * pt_x + B * pt_y + C * pt_z + D) / sqrt( pow(A, 2) + pow(B, 2) + pow(C, 2) );
+			if (d < distanceThreshold) {
+				currentInliers.insert(idx);
+			}
+		}
+
+		// check to see if we have more inliers with current set
+		// if so, we'll take these inliers instead
+		if (currentInliers.size() > inliersResult.size()) {
+			inliersResult = currentInliers;
+		}
+	}
+
+	// Put inliers in a PointIndices
+	pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
+
+    for (int index : inliersResult)
+    { inliers->indices.push_back( index ); }
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
+
+    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
+    return segResult;
+}
 
 
 template<typename PointT>

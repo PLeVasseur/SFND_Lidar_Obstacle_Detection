@@ -86,7 +86,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
 
     // filter down the resolution of point cloud and region of interest
     Eigen::Vector4f minPoint, maxPoint;
-    minPoint << -20.f, -9.f, -5.f, 1; // 2.5 * lane width = 9m wide
+    minPoint << -20.f, -9.f, -5.f, 1; // 2.5 * lane width = ~9m wide
     maxPoint <<  40.f,  9.f,  5.f, 1; // relative delta velocity @ 45 mph = ~40m
     pcl::PointCloud<pcl::PointXYZI>::Ptr filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.25f, minPoint, maxPoint);
 
@@ -94,7 +94,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
     // renderPointCloud(viewer,filteredCloud,"filteredCloud");
 
     // ground plane, object segmentation
-    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane(filteredCloud, 100, 0.2);
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane2(filteredCloud, 100, 0.2);
     // renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
     renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
