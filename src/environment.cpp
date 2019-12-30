@@ -82,17 +82,45 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // ----------------------------------------------------
     // -----Open 3D viewer and display City Block     -----
     // ----------------------------------------------------
+    bool renderBoxes = true;
 
     ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
     pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
 
+    // filter down the resolution of point cloud and region of interest
     Eigen::Vector4f minPoint, maxPoint;
     minPoint << -20.f, -9.f, -5.f, 1; // 2.5 * lane width = 9m wide
     maxPoint <<  40.f,  9.f,  5.f, 1; // relative delta velocity @ 45 mph = ~40m
     pcl::PointCloud<pcl::PointXYZI>::Ptr filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.25f, minPoint, maxPoint);
 
     // renderPointCloud(viewer,inputCloud,"inputCloud");
-    renderPointCloud(viewer,filteredCloud,"filteredCloud");
+    // renderPointCloud(viewer,filteredCloud,"filteredCloud");
+
+    // ground plane, object segmentation
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane(filteredCloud, 100, 0.2);
+    // renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
+    renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
+
+    // cluster objects
+    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->Clustering(segmentCloud.first, 0.50, 20, 500);
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1,0,0), Color(0,0,1), Color(1,1,0)};
+
+    for(pcl::PointCloud<pcl::PointXYZI>::Ptr cluster : cloudClusters)
+    {
+        std::cout << "cluster size ";
+        pointProcessorI->numPoints(cluster);
+        renderPointCloud(viewer,cluster,"obstCloud"+std::to_string(clusterId),colors[clusterId%3]);
+        ++clusterId;
+
+        if(renderBoxes) {
+            Box box = pointProcessorI->BoundingBox(cluster);
+            renderBox(viewer,box,clusterId);
+            // BoxQ boxq = pointProcessorI->BoundingBoxPCA(cluster);
+            // renderBox(viewer,boxq,clusterId);
+        }
+    }
 
 }
 
