@@ -87,8 +87,8 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
     pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
 
     Eigen::Vector4f minPoint, maxPoint;
-    minPoint << 0, 0, 0, 0;
-    maxPoint << 0, 0, 0, 0;
+    minPoint << -20.f, -9.f, -5.f, 1; // 2.5 * lane width = 9m wide
+    maxPoint <<  40.f,  9.f,  5.f, 1; // relative delta velocity @ 45 mph = ~40m
     pcl::PointCloud<pcl::PointXYZI>::Ptr filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.25f, minPoint, maxPoint);
 
     // renderPointCloud(viewer,inputCloud,"inputCloud");
