@@ -88,11 +88,8 @@ void proximity(const std::vector<std::vector<float>>& points, float distanceTol,
 	}
 }
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol, int minSize, int maxSize)
 {
-
-	// TODO: Fill out this function to return list of indices for each cluster
-
 	std::vector<std::vector<int>> clusters;
 
 	// ASSUMPTION: Order points passed into this function matches the order of points inserted into kdtree
@@ -102,12 +99,12 @@ std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<flo
 		if (processed[i] == false) {
 			std::vector<int> cluster;
 			proximity(points, distanceTol, cluster, tree, processed, i);
-			clusters.push_back(cluster);
+			if (cluster.size() > minSize && cluster.size() < maxSize)
+			{ clusters.push_back(cluster); }
 		}
 	}
  
 	return clusters;
-
 }
 
 int main ()
@@ -146,7 +143,7 @@ int main ()
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
   	//
-  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0, 0, 200);
   	//
   	auto endTime = std::chrono::steady_clock::now();
   	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
