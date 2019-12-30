@@ -47,10 +47,10 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     std::vector<int> indices;
 
     typename pcl::CropBox<PointT> roof;
-    roof.setInputCloud(cloud_filtered);
-    roof.setMin(Eigen::Vector4f(-1.5, -1.7, -1, 1));
-    roof.setMax(Eigen::Vector4f( 2.6,  1.7, -4, 1));
-    roi.filter(indices);
+    roof.setInputCloud(cloud_roi);
+    roof.setMin(Eigen::Vector4f(-1.5, -1.7, -1,   1));
+    roof.setMax(Eigen::Vector4f( 2.6,  1.7, -0.4, 1));
+    roof.filter(indices);
 
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
     for (int point : indices)
