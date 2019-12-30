@@ -115,10 +115,10 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
         ++clusterId;
 
         if(renderBoxes) {
-            // Box box = pointProcessor.BoundingBox(cluster);
-            // renderBox(viewer,box,clusterId);
-            BoxQ boxq = pointProcessorI->BoundingBoxPCA(cluster);
-            renderBox(viewer,boxq,clusterId);
+            Box box = pointProcessorI->BoundingBox(cluster);
+            renderBox(viewer,box,clusterId);
+            // BoxQ boxq = pointProcessorI->BoundingBoxPCA(cluster);
+            // renderBox(viewer,boxq,clusterId);
         }
     }
 
