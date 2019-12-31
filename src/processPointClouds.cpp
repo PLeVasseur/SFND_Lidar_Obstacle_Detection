@@ -291,24 +291,13 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     	
     std::vector<std::vector<int>> clusterIndices = euclideanCluster(points, tree, clusterTolerance, minSize, maxSize);
 
-    // munging here to get indices back into PCL PointIndices for further use
-    std::vector<pcl::PointIndices> clusterPointIndices;
     for (std::vector<int> clusterIndice : clusterIndices)
     {
-        pcl::PointIndices clusterPointIndice;
-        for (int clusterInd : clusterIndice)
-        {
-            clusterPointIndice.indices.push_back( clusterInd );
-        }
-        clusterPointIndices.push_back( clusterPointIndice );
-    }
-    // munging here to get indices back into PCL PointIndices for further use
-
-    for (auto getIndices : clusterPointIndices)
-    {
         typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
-        for (int index : getIndices.indices)
-            { cloud_cluster->points.push_back (cloud->points[index]); }
+        for (int index : clusterIndice)
+        {
+            cloud_cluster->points.push_back (cloud->points[index]);
+        }
         cloud_cluster->width = cloud_cluster->points.size ();
         cloud_cluster->height = 1;
         cloud_cluster->is_dense = true;
