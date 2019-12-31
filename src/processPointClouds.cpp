@@ -272,7 +272,10 @@ template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering2(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
 {
     // Time clustering process
-    auto startTime = std::chrono::steady_clock::now();
+    auto startTimeClustering = std::chrono::steady_clock::now();
+
+    // Time munging process
+    auto startTimeMunging = std::chrono::steady_clock::now();
 
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
@@ -288,8 +291,19 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
         tree->insert(point,i);
     }
     // munging here to get point cloud data into format for euclidean clustering
-    	
+
+    auto endTimeMunging = std::chrono::steady_clock::now();
+    auto elapsedTimeMunging = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeMunging - startTimeMunging);
+    std::cout << "munging took " << elapsedTimeMunging.count() << " milliseconds and processed " << points.size() << " points" << std::endl;
+
+    // Time munging process
+    auto startTimeClusteringFunction = std::chrono::steady_clock::now();
+
     std::vector<std::vector<int>> clusterIndices = euclideanCluster(points, tree, clusterTolerance, minSize, maxSize);
+
+    auto endTimeClusteringFunction = std::chrono::steady_clock::now();
+    auto elapsedTimeClusteringFunction = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeClusteringFunction - startTimeClusteringFunction);
+    std::cout << "euclideanCluster took " << elapsedTimeClusteringFunction.count() << " milliseconds and processed " << clusterIndices.size() << " clusters" << std::endl;
 
     for (std::vector<int> clusterIndice : clusterIndices)
     {
@@ -305,9 +319,9 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
         clusters.push_back(cloud_cluster);
     }
     
-    auto endTime = std::chrono::steady_clock::now();
-    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+    auto endTimeClustering = std::chrono::steady_clock::now();
+    auto elapsedTimeClustering = std::chrono::duration_cast<std::chrono::milliseconds>(endTimeClustering - startTimeClustering);
+    std::cout << "clustering took " << elapsedTimeClustering.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
 
     return clusters;
 }
