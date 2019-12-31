@@ -15,7 +15,7 @@ add_definitions(${PCL_DEFINITIONS})
 list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 
 
-add_executable (quizCluster cluster.cpp ../../render/render.cpp)
+add_executable (quizCluster clusterTest.cpp ../../render/render.cpp cluster.cpp)
 target_link_libraries (quizCluster ${PCL_LIBRARIES})
 
 
