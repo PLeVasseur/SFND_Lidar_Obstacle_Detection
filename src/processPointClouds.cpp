@@ -278,17 +278,43 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     // TODO: insert from scratch Euclidean clustering
     KdTree* tree = new KdTree;
+
+    // munging here to get point cloud data into format for euclidean clustering
     std::vector<std::vector<float>> points;
-  
     for (int i=0; i<cloud->points.size(); i++)
     {
         std::vector<float> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
         points.push_back( point );
         tree->insert(point,i);
     }
+    // munging here to get point cloud data into format for euclidean clustering
     	
+    std::vector<std::vector<int>> clusterIndices = euclideanCluster(points, tree, clusterTolerance, minSize, maxSize);
 
-    std::vector<std::vector<int>> cluster_indices = euclideanCluster(points, tree, clusterTolerance, minSize, maxSize);
+    // munging here to get indices back into PCL PointIndices for further use
+    std::vector<pcl::PointIndices> clusterPointIndices;
+    for (std::vector<int> clusterIndice : clusterIndices)
+    {
+        pcl::PointIndices clusterPointIndice;
+        for (int clusterInd : clusterIndice)
+        {
+            clusterPointIndice.indices.push_back( clusterInd );
+        }
+        clusterPointIndices.push_back( clusterPointIndice );
+    }
+    // munging here to get indices back into PCL PointIndices for further use
+
+    for (auto getIndices : clusterPointIndices)
+    {
+        typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
+        for (int index : getIndices.indices)
+            { cloud_cluster->points.push_back (cloud->points[index]); }
+        cloud_cluster->width = cloud_cluster->points.size ();
+        cloud_cluster->height = 1;
+        cloud_cluster->is_dense = true;
+
+        clusters.push_back(cloud_cluster);
+    }
     
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
