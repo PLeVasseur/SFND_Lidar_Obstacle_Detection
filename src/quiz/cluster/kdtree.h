@@ -23,9 +23,16 @@ struct Node
 struct KdTree
 {
 	Node* root;
+	uint num_of_dimension;
 
 	KdTree()
-	: root(NULL)
+	: root(NULL),
+	  num_of_dimension(2)
+	{}
+
+	KdTree(uint num_of_dim)
+	: root(NULL),
+	  num_of_dimension(num_of_dim)
 	{}
 
 	void insert(std::vector<float> point, int id)
@@ -41,7 +48,7 @@ struct KdTree
 		}
 		else {
 			// calculate current dimension
-			int cd = dimension % 2;
+			int cd = dimension % num_of_dimension;
 			double split = (*node)->point[cd];
 
 			if (point[cd] < split) {
@@ -87,7 +94,7 @@ struct KdTree
 			}
 
 			// check the regions of the kdtree we need to explore further
-			uint cd = dim % 2; // 0 if x, 1 if y
+			uint cd = dim % num_of_dimension; // 0 if x, 1 if y
 			if (target[cd] - distanceTol < node->point[cd]) {
 				searchHelper(target, distanceTol, dim + 1, nearbyIDs, node->left);
 			}
