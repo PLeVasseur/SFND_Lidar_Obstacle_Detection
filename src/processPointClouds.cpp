@@ -280,7 +280,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
     // TODO: insert from scratch Euclidean clustering
-    KdTree* tree = new KdTree;
+    KdTree* tree = new KdTree(3);
 
     // munging here to get point cloud data into format for euclidean clustering
     std::vector<std::vector<float>> points;
